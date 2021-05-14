@@ -2,6 +2,12 @@
     Avatar action routines
 """
 
+import logging
+from avatar.dialogue.dummy_dialogue_manager import DummyDialogueManager
+from avatar.vqa.dummy_model import DummyVQA
+
+log = logging.getLogger(__name__)
+
 DIRECTION_TO_WORD = {
     "n": "north",
     "e": "east",
@@ -58,8 +64,11 @@ class SimpleAvatar(Avatar):
         self.image_directory = image_directory
         self.observation = None
 
+        self.dialogue_manager = DummyDialogueManager()
+        self.vqa_model = DummyVQA()
+
     def step(self, observation: dict) -> dict:
-        print(observation)  # for debugging
+        log.debug("step observation: %s", observation)  # for debugging
         actions = dict()
         if observation["image"]:
             self.__update_observation(observation)
@@ -68,15 +77,19 @@ class SimpleAvatar(Avatar):
         return actions
 
     def __update_observation(self, observation: dict):
+        log.debug("__update_observation observation: %s", observation)
         self.observation = observation
 
     def __update_actions(self, actions, message):
+        log.debug("__update_actions actions: %s", actions)
+        log.debug("__update_actions message: %s", message)        
         if "go" in message.lower():
             actions["move"] = self.__predict_move_action(message)
         else:
             actions["response"] = self.__generate_response(message)
 
     def __generate_response(self, message: str) -> str:
+        log.debug("__generate_response message: %s", message)
         message = message.lower()
 
         if message.startswith("what"):
@@ -100,6 +113,7 @@ class SimpleAvatar(Avatar):
         return "I do not understand"
 
     def __predict_move_action(self, message: str) -> str:
+        log.debug("__predict_move_action message: %s", message)
         if "north" in message:
             return "n"
         if "east" in message:

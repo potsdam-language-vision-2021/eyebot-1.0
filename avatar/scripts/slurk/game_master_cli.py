@@ -7,11 +7,14 @@
     sys.path.append("F:\\Development\\git\\clp-sose21-pm-vision")
 """
 import base64
+import logging
 
 import click
 import socketIO_client
 
 from avatar.game_master_slurk import GameMaster
+
+log = logging.getLogger(__name__)
 
 
 def build_url(host, context=None, port=None, base_url=None, auth=None):
@@ -26,6 +29,38 @@ def build_url(host, context=None, port=None, base_url=None, auth=None):
     if base_url:
         uri = uri + f"{base_url}"
     return uri
+
+
+def start(token, slurk_host, slurk_context, slurk_port,
+                   image_server_host, image_server_context, image_server_port, image_server_auth):
+    """Start the game master bot."""
+    if slurk_port == "None":
+        slurk_port = None
+
+    if slurk_port:
+        slurk_port = int(slurk_port)
+
+    if image_server_port == "None":
+        image_server_port = None
+
+    if image_server_port:
+        image_server_port = int(image_server_port)
+
+    if image_server_auth == "None":
+        image_server_auth = None
+
+    custom_headers = {"Authorization": token, "Name": GameMaster.NAME}
+    socket_url = build_url(slurk_host, slurk_context)
+    log.debug("Socket url %s", socket_url)
+    sio = socketIO_client.SocketIO(socket_url, slurk_port, headers=custom_headers, Namespace=GameMaster)
+    image_url = build_url(image_server_host, image_server_context, image_server_port)
+    log.debug("Image url %s", image_url)
+    sio.get_namespace().set_base_image_url(image_url)
+    if image_server_auth:
+        # encode as base64, but keep as string
+        image_server_auth = base64.b64encode(image_server_auth.encode("utf-8")).decode("utf-8")
+        sio.get_namespace().set_image_server_auth(image_server_auth)
+    return sio
 
 
 @click.command()
@@ -47,31 +82,8 @@ def build_url(host, context=None, port=None, base_url=None, auth=None):
 @click.option("--image_server_auth", help="credentials in format 'username:password'")
 def start_and_wait(token, slurk_host, slurk_context, slurk_port,
                    image_server_host, image_server_context, image_server_port, image_server_auth):
-    """Start the game master bot."""
-    if slurk_port == "None":
-        slurk_port = None
-
-    if slurk_port:
-        slurk_port = int(slurk_port)
-
-    if image_server_port == "None":
-        image_server_port = None
-
-    if image_server_port:
-        image_server_port = int(image_server_port)
-
-    if image_server_auth == "None":
-        image_server_auth = None
-
-    custom_headers = {"Authorization": token, "Name": GameMaster.NAME}
-    socket_url = build_url(slurk_host, slurk_context)
-    sio = socketIO_client.SocketIO(socket_url, slurk_port, headers=custom_headers, Namespace=GameMaster)
-    image_url = build_url(image_server_host, image_server_context, image_server_port)
-    sio.get_namespace().set_base_image_url(image_url)
-    if image_server_auth:
-        # encode as base64, but keep as string
-        image_server_auth = base64.b64encode(image_server_auth.encode("utf-8")).decode("utf-8")
-        sio.get_namespace().set_image_server_auth(image_server_auth)
+    sio = start(token, slurk_host, slurk_context, slurk_port,
+                   image_server_host, image_server_context, image_server_port, image_server_auth)
     sio.wait()
 
 

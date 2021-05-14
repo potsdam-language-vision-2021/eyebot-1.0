@@ -1,14 +1,19 @@
 """
     Slurk client as wrapper for the avatar agent to handle the slurky socketio stuff
 """
+import logging
+
 import socketIO_client
 
 from avatar.game_avatar import Avatar
 
 
+log = logging.getLogger(__name__)
+
+
 def check_error_callback(success, error=None):
     if error:
-        print("Error: ", error)
+        log.error("Error: ", error)
 
 
 class AvatarBot(socketIO_client.BaseNamespace):
@@ -37,7 +42,7 @@ class AvatarBot(socketIO_client.BaseNamespace):
 
         :param data: {'room': room.name, 'user': user.id}
         """
-        print("on_joined_room", data)
+        log.debug("on_joined_room data: %s", data)
         if not self.id:
             self.id = data['user']
 
@@ -70,6 +75,8 @@ class AvatarBot(socketIO_client.BaseNamespace):
                 'html': payload.get('html', False)
             }
         """
+        log.debug("on_text_message data: %s", data)
+
         if not self.id:
             return  # not ready yet
         message = data["msg"]
@@ -101,6 +108,9 @@ class AvatarBot(socketIO_client.BaseNamespace):
         self.__perform_actions(actions, room_name)
 
     def __perform_actions(self, actions, room_name):
+        log.debug("__perform_actions data: %s", actions)
+        log.debug("__perform_actions room_name: %s", room_name)
+
         if "move" in actions:
             command = actions["move"]
             self.__send_command(command, room_name)
@@ -109,7 +119,11 @@ class AvatarBot(socketIO_client.BaseNamespace):
             self.__send_message(response, room_name)
 
     def __send_message(self, message, room_name):
+        log.debug("__send_message message: %s", message)
+        log.debug("__send_message room_name: %s", room_name)
         self.emit("text", {'room': room_name, 'msg': message}, check_error_callback)
 
     def __send_command(self, command, room_name):
+        log.debug("__send_command command: %s", command)
+        log.debug("__send_command room_name: %s", room_name)
         self.emit("message_command", {'room': room_name, 'command': command}, check_error_callback)

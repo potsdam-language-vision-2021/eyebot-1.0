@@ -109,26 +109,8 @@ class SlurkApi:
         return json.loads(r.text)
 
 
-@click.command()
-@click.option("--room_name", default="avatar_room", show_default=True, required=True)
-@click.option("--task_name", default="avatar_game", show_default=True, required=True)
-@click.option("--layout_name", default="avatar_layout", show_default=True, required=True)
-@click.option("--slurk_host", default="127.0.0.1", show_default=True, required=True)
-@click.option("--slurk_port", default="5000", show_default=True, required=True)
-@click.option("--slurk_context", default=None, show_default=True)
-@click.option("--token", default="00000000-0000-0000-0000-000000000000", show_default=True, required=True)
-def setup_game(room_name, task_name, layout_name, slurk_host, slurk_port, slurk_context, token):
-    """Setup the avatar game.
 
-        \b
-        TOKEN the admin token for the slurk rest api. You get this token, when starting slurk.
-        ROOM_NAME the name of the slurk room to create
-        TASK_NAME the name of the slurk task to create
-        LAYOUT_NAME the name of the layout which will get uploaded for the room
-        SLURK_HOST domain of the the slurk app
-        SLURK_PORT port of the slurk app
-        SLURK_CONTEXT (optional) sub-path to the slurk host
-    """
+def _setup_game(room_name, task_name, layout_name, slurk_host, slurk_port, slurk_context, token):
     if slurk_port == "None":
         slurk_port = None
 
@@ -199,26 +181,53 @@ def setup_game(room_name, task_name, layout_name, slurk_host, slurk_port, slurk_
     sio.disconnect()
 
     # Use the REST API to create game tokens
-    print("Master token: ", slurk_api.create_token({
-        "room": room_name,
-        "task": task_id,
-        "message_text": True,
-        "message_image": True,
-        "user_room_join": True
-    }))
-    print("Player token: ", slurk_api.create_token({
-        "room": room_name,
-        "task": task_id,
-        "message_text": True,
-        "message_command": True
-    }))
-    print("Avatar token: ", slurk_api.create_token({
-        "room": room_name,
-        "task": task_id,
-        "message_text": True,
-        "message_command": True
-    }))
+    return {
+        "Master": slurk_api.create_token({
+            "room": room_name,
+            "task": task_id,
+            "message_text": True,
+            "message_image": True,
+            "user_room_join": True
+        }),
+        "Player": slurk_api.create_token({
+            "room": room_name,
+            "task": task_id,
+            "message_text": True,
+            "message_command": True
+        }),
+        "Avatar": slurk_api.create_token({
+            "room": room_name,
+            "task": task_id,
+            "message_text": True,
+            "message_command": True
+        })
+    }
 
+
+@click.command()
+@click.option("--room_name", default="avatar_room", show_default=True, required=True)
+@click.option("--task_name", default="avatar_game", show_default=True, required=True)
+@click.option("--layout_name", default="avatar_layout", show_default=True, required=True)
+@click.option("--slurk_host", default="127.0.0.1", show_default=True, required=True)
+@click.option("--slurk_port", default="5000", show_default=True, required=True)
+@click.option("--slurk_context", default=None, show_default=True)
+@click.option("--token", default="00000000-0000-0000-0000-000000000000", show_default=True, required=True)
+def setup_game(room_name, task_name, layout_name, slurk_host, slurk_port, slurk_context, token):
+    """Setup the avatar game.
+
+        \b
+        TOKEN the admin token for the slurk rest api. You get this token, when starting slurk.
+        ROOM_NAME the name of the slurk room to create
+        TASK_NAME the name of the slurk task to create
+        LAYOUT_NAME the name of the layout which will get uploaded for the room
+        SLURK_HOST domain of the the slurk app
+        SLURK_PORT port of the slurk app
+        SLURK_CONTEXT (optional) sub-path to the slurk host
+    """    
+    keys = _setup_game(room_name, task_name, layout_name, slurk_host, slurk_port, slurk_context, token)
+    print("Master token: ", keys["Master"])
+    print("Player token: ", keys["Player"])
+    print("Avatar token: ", keys["Avatar"])
 
 if __name__ == '__main__':
     setup_game()

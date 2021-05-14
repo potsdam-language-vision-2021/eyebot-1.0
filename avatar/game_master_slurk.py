@@ -1,10 +1,13 @@
 """
     Slurk client for the game master
 """
+
+import logging
 import socketIO_client
 
 from avatar.game import MapWorldGame
 
+log = logging.getLogger(__name__)
 
 def check_error_callback(success, error=None):
     if error:
@@ -46,7 +49,7 @@ class GameMaster(socketIO_client.BaseNamespace):
 
         :param data: {'room': room.name, 'user': user.id}
         """
-        print("on_joined_room", data)
+        log.debug("on_joined_room data: %s", data)
         if not self.id:
             self.id = data['user']
         room_name = data["room"]
@@ -66,6 +69,7 @@ class GameMaster(socketIO_client.BaseNamespace):
                 'private': False (commands cannot be private when coming from the standard layout)
             }
         """
+        log.debug("on_command data: %s", data)
         game: MapWorldGame = self.games[data["room"]]
         command = data["command"]
         user = data["user"]
@@ -90,6 +94,7 @@ class GameMaster(socketIO_client.BaseNamespace):
         """
             Actions performed by the avatar.
         """
+        log.debug("step_game command: %s", command)
         observation = game.step(user["id"], command)
         if observation:
             self.__send_observation(observation, game.room, user["id"], game.is_avatar(user["id"]))
@@ -148,11 +153,12 @@ class GameMaster(socketIO_client.BaseNamespace):
             'timestamp': timegm(datetime.now().utctimetuple())
         }
         """
-        print("on_status", data)
+        log.debug("on_status data: %s", data)
         user = data["user"]
         room_name = data["room"]
         if user["id"] == self.id:
             return
+        log.debug("Games: %s", self.games)
         game = self.games[room_name]
         if data["type"] == "join":
             self.__join_game(user, game)
@@ -246,12 +252,20 @@ class GameMaster(socketIO_client.BaseNamespace):
         self.__send_observations(game)
 
     def __send_observation(self, observation: dict, room_name: str, user_id: int, is_avatar: bool):
+        log.debug(
+            "__send_observation room name: %s, user_id: %s, is_avatar: %s, observation: %s", 
+            room_name, 
+            user_id, 
+            is_avatar, 
+            observation, 
+        )
         if "instance" in observation:
             self.__set_room_image(observation["instance"], room_name, user_id)
             if is_avatar:
                 # Send observation event for bots (they cannot see the browser)
                 # self.emit("observation", {"observation": observation}, room=room_name)
                 # We use private messages as a "vehicle" as I cannot see how to transfer arbitrary data
+                log.debug("__send_observation observation: %s", observation)
                 self.__send_private_message({"observation": observation}, room_name, user_id)
         if "situation" in observation:
             self.__send_private_message(observation["situation"], room_name, user_id)
@@ -266,7 +280,7 @@ class GameMaster(socketIO_client.BaseNamespace):
         image_url = f"{self.base_image_url}/{image_url}"
         if self.set_image_server_auth:
             image_url = image_url + f"?code={self.image_server_auth}"
-        print(image_url)
+        log.debug("__set_room_image image_url: %s", image_url)
         self.emit("set_attribute",
                   {"id": "current-image",
                    "attribute": "src",

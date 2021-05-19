@@ -17,7 +17,3 @@ class RasaDialogueManager:
         response_object = response.json()
         intent = response_object['intent']['name']
         return intent
-
-    
-
-

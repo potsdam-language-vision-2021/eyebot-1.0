@@ -12,7 +12,7 @@ import logging
 import click
 import socketIO_client
 
-from avatar.game_avatar import SimpleAvatar
+from avatar.game_avatar import SimpleAvatar, EyebotAvatar
 from avatar.game_avatar_slurk import AvatarBot
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def start(token, slurk_host, slurk_context, slurk_port, image_directory):
     log.debug("Socket url: %s", socket_url)
     sio = socketIO_client.SocketIO(socket_url, slurk_port, headers=custom_headers, Namespace=AvatarBot)
     # NOTE: YOU SHOULD REFERENCE YOUR MODEL HERE
-    avatar_model = SimpleAvatar(image_directory)
+    avatar_model = EyebotAvatar(image_directory)
     sio.get_namespace().set_agent(avatar_model)
     return sio
 

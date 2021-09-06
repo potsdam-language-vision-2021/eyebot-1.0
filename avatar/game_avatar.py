@@ -6,6 +6,9 @@ import logging
 from avatar.dialogue.dummy_dialogue_manager import DummyDialogueManager
 from avatar.vqa.dummy_model import DummyVQA
 
+from avatar.dialogue.rasa_dialogue_manager import RasaDialogueManager
+from avatar.vqa.oscar_api import OscarModel
+
 log = logging.getLogger(__name__)
 
 DIRECTION_TO_WORD = {
@@ -82,7 +85,7 @@ class SimpleAvatar(Avatar):
 
     def __update_actions(self, actions, message):
         log.debug("__update_actions actions: %s", actions)
-        log.debug("__update_actions message: %s", message)        
+        log.debug("__update_actions message: %s", message)
         if "go" in message.lower():
             actions["move"] = self.__predict_move_action(message)
         else:
@@ -123,3 +126,43 @@ class SimpleAvatar(Avatar):
         if "south" in message:
             return "s"
         return "nowhere"
+
+
+class EyebotAvatar(Avatar):
+    def __init__(self, image_directory):
+        self.image_directory = image_directory
+        self.image = None
+        self.directions = None
+        self.observation = None
+        self.dialogue_manager = RasaDialogueManager.create(
+            "http://localhost:5005/model/parse",
+            OscarModel("http://localhost:5000")
+        )
+
+    def step(self, observation: dict) -> dict:
+        log.debug("step observation: %s", observation)  # for debugging
+        actions = {}
+
+        # observation: {"image": str, "directions": [str], "message": str }
+
+        if observation["image"]:
+            self.image = observation["image"]
+        if observation["directions"]:
+            self.directions = observation["directions"]
+        if observation["message"]:
+            direction, response = self.dialogue_manager.generate_action_and_response(
+                self.image,
+                self.directions,
+                observation["message"]
+            )
+            if direction is not None:
+                actions["move"] = direction
+            if response is not None:
+                actions["response"] = response
+
+        # move" and/or "response"
+        return actions
+
+    def __update_observation(self, observation: dict):
+        log.debug("__update_observation observation: %s", observation)
+        self.observation = observation

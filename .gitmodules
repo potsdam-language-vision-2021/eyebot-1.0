@@ -1,0 +1,6 @@
+[submodule "models/clip-finetune-ade20k"]
+	path = models/clip-finetune-ade20k
+	url = https://github.com/raunak-agarwal/clip-finetune-ade20k
+[submodule "models/vinvl"]
+	path = models/vinvl
+	url = https://github.com/florentinecitron/image_server

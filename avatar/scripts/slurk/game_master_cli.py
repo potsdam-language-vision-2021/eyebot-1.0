@@ -53,7 +53,7 @@ def start(token, slurk_host, slurk_context, slurk_port,
     socket_url = build_url(slurk_host, slurk_context)
     log.debug("Socket url %s", socket_url)
     sio = socketIO_client.SocketIO(socket_url, slurk_port, headers=custom_headers, Namespace=GameMaster)
-    image_url = build_url(image_server_host, image_server_context, image_server_port)
+    image_url = 'http://localhost:8000/training' #build_url(image_server_host, image_server_context, image_server_port)
     log.debug("Image url %s", image_url)
     sio.get_namespace().set_base_image_url(image_url)
     if image_server_auth:
@@ -88,4 +88,5 @@ def start_and_wait(token, slurk_host, slurk_context, slurk_port,
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     start_and_wait()
